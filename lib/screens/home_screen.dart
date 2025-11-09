@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:platform_specific_code/screens/event_channel_screen.dart';
+import 'package:platform_specific_code/screens/system_info_screen.dart';
+import 'battery_level_screen.dart';
+import 'charging_status_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -19,29 +21,33 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               SizedBox(height: 15,),
               ElevatedButton(
-                onPressed: (){
-                  Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (BuildContext context) {
-                        return const EventChannelScreen();
-                      },
-                    ),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const BatteryLevelScreen()),
                   );
                 },
-                child: Text("Event channel"),
+                child: const Text('🔋 Battery Level (MethodChannel)'),
               ),
-              SizedBox(height: 20,),
+              const SizedBox(height: 20),
               ElevatedButton(
-                onPressed: (){
-                  Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (BuildContext context) {
-                        return const EventChannelScreen();
-                      },
-                    ),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const ChargingStatusScreen()),
                   );
                 },
-                child: Text("Event channel"),
+                child: const Text('⚡ Charging Status (EventChannel)'),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const SystemInfoScreen()),
+                  );
+                },
+                child: const Text('📱 System Info (Inline Channel)'),
               ),
             ],
           ),

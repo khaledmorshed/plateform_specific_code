@@ -1,43 +1,51 @@
 package com.example.platform_specific_code
 
-import android.content.*
-import android.os.BatteryManager
+import android.os.Build
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.EventChannel
-import android.util.Log
 
 class MainActivity : FlutterActivity() {
-    private val CHARGING_CHANNEL = "samples.flutter.dev/charging"
+
+    companion object {
+        private const val SYSTEM_INFO_CHANNEL = "samples.flutter.dev/systemInfo"
+    }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        Log.d("MyAppLog", "Flutter Engine configured!")
-        EventChannel(flutterEngine.dartExecutor.binaryMessenger, CHARGING_CHANNEL).setStreamHandler(
-            object : EventChannel.StreamHandler {
-                    private var chargingStateChangeReceiver: BroadcastReceiver? = null
 
-                    override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
-                        chargingStateChangeReceiver = createChargingStateChangeReceiver(events)
-                        registerReceiver(chargingStateChangeReceiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
-                    }
+        // ✅ 1️⃣ Register MethodChannel handler (Battery)
+        val batteryChannel = MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            BatteryChannelHandler.CHANNEL_NAME
+        )
+        BatteryChannelHandler.register(batteryChannel, this)
 
-                    override fun onCancel(arguments: Any?) {
-                        unregisterReceiver(chargingStateChangeReceiver)
-                        chargingStateChangeReceiver = null
-                    }
+        // ✅ 2️⃣ Register EventChannel handler (Charging)
+        val chargingChannel = EventChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            ChargingEventHandler.CHANNEL_NAME
+        )
+        ChargingEventHandler.register(chargingChannel, this)
+
+        //  one more MethodChannel implemented directly here
+        val systemInfoChannel = MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            SYSTEM_INFO_CHANNEL
+        )
+
+        systemInfoChannel.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "getSystemInfo" -> {
+                    val info = mapOf(
+                        "device" to Build.MODEL,
+                        "manufacturer" to Build.MANUFACTURER,
+                        "androidVersion" to Build.VERSION.RELEASE
+                    )
+                    result.success(info)
                 }
-            )
-    }
-
-    private fun createChargingStateChangeReceiver(events: EventChannel.EventSink?): BroadcastReceiver {
-        return object : BroadcastReceiver() {
-            override fun onReceive(context: Context?, intent: Intent?) {
-                val status = intent?.getIntExtra(BatteryManager.EXTRA_STATUS, -1)
-                Log.d("BatteryReceiver", "Battery status changed: $status")
-                val isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING ||
-                        status == BatteryManager.BATTERY_STATUS_FULL
-                events?.success(if (isCharging) "charging" else "discharging")
+                else -> result.notImplemented()
             }
         }
     }
